@@ -112,6 +112,9 @@ setup_video:
     ;Sample palette
     jsr graphics_vload_sample_palette
 
+    ; Second sample palette`
+    jsr graphics_vload_sample_palette_snes
+
     ; force Black BG by setting first color in first palette to black
     force_black_bg:
         stz CGADD

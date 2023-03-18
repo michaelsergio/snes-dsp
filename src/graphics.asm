@@ -1,3 +1,7 @@
+PAL_SAMPLE_ADDR = $80
+PAL_SAMPLE_ADDR_SNES = $90
+
+
 ; Loads graphics into vram
 ; Simplfies loading vram to copy data
 ; src_addr: 24 bit addr of src data
@@ -114,7 +118,6 @@ graphics_reset_sprite_table:
     bne @write_next_sprite_pos  ; do writes until 0
 rts
 
-PAL_SAMPLE_ADDR = $80
 ; Loads a palette into #$80
 graphics_vload_sample_palette:
     ; force a palette here
@@ -149,3 +152,41 @@ graphics_vload_sample_palette:
     stz CGDATA
     stz CGDATA
 rts
+
+; This is a more classic SNES color palette based on the original controller
+; src - https://www.reddit.com/r/emulation/comments/2wnzus/hex_colours_for_snes_controller/
+; Use BGR 555 to convert web colors - https://orangeglo.github.io/BGR555/
+SNES_COLOR_RED        = $7D0C   ; A Button: #eb1a1d
+SNES_COLOR_YELLOW     = $3F0B   ; B Button: #fece15
+SNES_COLOR_BLUE       = $2059   ; X Button: #0749b4
+SNES_COLOR_GREEN      = $2022   ; Y Button: #008d45
+SNES_COLOR_DARK_GRAY  = $CE3D   ; Button Ring: #717679
+SNES_COLOR_LIGHT_GRAY = $B556   ; Main controller: #a8aaaa
+SNES_COLOR_BLACK      = $C718   ; D-Pad: #3c3331
+SNES_COLOR_LILAC	  = $5366   ; X/Y buttons #9997cb
+SNES_COLOR_PURPLE	  = $2A41   ; A/B buttons # 514887
+
+.macro _graphics_color_write color
+    lda #>color
+    sta CGDATA
+    lda #<color
+    sta CGDATA
+.endmacro
+
+graphics_vload_sample_palette_snes:
+    ; force a palette here
+    lda #PAL_SAMPLE_ADDR_SNES     ; according to A-17 in OBJ palettes in mode 0
+    sta CGADD
+
+	_graphics_color_write $FFFF ; White
+	_graphics_color_write SNES_COLOR_BLUE
+	_graphics_color_write SNES_COLOR_GREEN
+	_graphics_color_write SNES_COLOR_RED
+	_graphics_color_write SNES_COLOR_YELLOW
+	_graphics_color_write SNES_COLOR_DARK_GRAY
+	_graphics_color_write SNES_COLOR_LIGHT_GRAY
+	_graphics_color_write SNES_COLOR_BLACK
+	_graphics_color_write SNES_COLOR_LILAC
+	_graphics_color_write SNES_COLOR_PURPLE
+rts
+
