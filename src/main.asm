@@ -6,6 +6,7 @@
 .include "graphics.asm"
 ; .include "joycon.asm"
 .include "level_basic_tile.asm"
+.include "screen_main.asm"
 .include "screen_scroll.asm"
 .include "input.asm"
 .include "audio.asm"
@@ -137,7 +138,8 @@ setup_video:
     BG2_VRAM_TILE_START = $2000
     graphics_vload_block tiles_basic_set, BG2_VRAM_TILE_START, (8*2*8) ; num * bpp * size
 
-    jsr level_basic_tile_load_tilemap
+    ; jsr level_basic_tile_load_tilemap
+	jsr screen_basic_tile_load_tilemap
 
     ; TODO: Transfer OAM, CGRAM Data via DMA (2 channels)
     jsr graphics_reset_sprite_table
