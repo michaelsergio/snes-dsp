@@ -109,6 +109,7 @@ screen_basic_tile_load_tilemap:
     POS_ECHO_R = $1A80 >> 1
     POS_KEY_ON = $1B00 >> 1
     POS_KEY_OFF = $1B80 >> 1
+    POS_CHANNELS = $1BCA >> 1
 
     POS_ECHO = $1C00 >> 1
     POS_MUTE = $1C80 >> 1
@@ -143,6 +144,11 @@ screen_basic_tile_load_tilemap:
 	stx VMADDL
 	ldx #_screen_str_key_off
 	jsr _screen_write_strz
+	ldx #POS_CHANNELS
+	stx VMADDL
+	ldx #_screen_str_channels
+	jsr _screen_write_strz
+
 
 	; Draw the boxes
 	ldx #POS_KEY_ON + $5
@@ -325,3 +331,5 @@ _screen_str_echo:  .asciiz "ECHO"
 _screen_str_mute:  .asciiz "MUTE"
 _screen_str_noise_clk:  .asciiz "NOISECLK"
 _screen_str_flg:  .asciiz "FLG"
+
+_screen_str_channels: .asciiz "76543210"
