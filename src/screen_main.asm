@@ -103,80 +103,104 @@ screen_basic_tile_load_tilemap:
 	ldx #_screen_str_m2
 	jsr _screen_write_strz
 
+    POS_VOL_L = $1900 >> 1
+    POS_VOL_R = $1980 >> 1
+    POS_ECHO_L = $1A00 >> 1
+    POS_ECHO_R = $1A80 >> 1
+    POS_KEY_ON = $1B00 >> 1
+    POS_KEY_OFF = $1B80 >> 1
+
+    POS_ECHO = $1C00 >> 1
+    POS_MUTE = $1C80 >> 1
+    POS_NOISE = $1D00 >> 1
+
 	; VOL
-	ldx #$1900 >> 1
+	ldx #POS_VOL_L
 	stx VMADDL
 	ldx #_screen_str_vol_L
 	jsr _screen_write_strz
-	ldx #$1980 >> 1
+	ldx #POS_VOL_R
 	stx VMADDL
 	ldx #_screen_str_vol_R
 	jsr _screen_write_strz
 
 	; Echo
-	ldx #$1A00 >> 1
+	ldx #POS_ECHO_L
 	stx VMADDL
 	ldx #_screen_str_echo_L
 	jsr _screen_write_strz
-	ldx #$1A80 >> 1
+	ldx #POS_ECHO_R
 	stx VMADDL
 	ldx #_screen_str_echo_R
 	jsr _screen_write_strz
 
 	; KEY
-	ldx #$1B00 >> 1
+	ldx #POS_KEY_ON
 	stx VMADDL
 	ldx #_screen_str_key_on
 	jsr _screen_write_strz
-	ldx #$1B80 >> 1
+	ldx #POS_KEY_OFF
 	stx VMADDL
 	ldx #_screen_str_key_off
 	jsr _screen_write_strz
 
 	; Draw the boxes
-	ldx #$1B0A >> 1
-	stx VMADDL
-	jsr _screen_write_box8
-	ldx #$1B8A >> 1
+	ldx #POS_KEY_ON + $5
 	stx VMADDL
 	jsr _screen_write_box8
 
+	ldx #POS_KEY_OFF + $5
+	stx VMADDL
+	jsr _screen_write_box8
+
+
 	; ECHO
-	ldx #$1C00 >> 1
+	ldx #POS_ECHO
 	stx VMADDL
 	ldx #_screen_str_echo
 	jsr _screen_write_strz
-	ldx #$1C80 >> 1
+	ldx #POS_MUTE
 	stx VMADDL
 	ldx #_screen_str_mute
 	jsr _screen_write_strz
-	ldx #$1D00 >> 1
+	ldx #POS_NOISE
 	stx VMADDL
 	ldx #_screen_str_noise_clk
 	jsr _screen_write_strz
 
 	; Write noise and mute box
-	ldx #$1C0A >> 1
+	ldx #POS_ECHO + $5
 	stx VMADDL
 	jsr _screen_write_box1
-	ldx #$1C8A >> 1
+	ldx #POS_MUTE + $5
 	stx VMADDL
 	jsr _screen_write_box1
 
 
 	; Sample hex data
 	; Volume
-	ldx #$190E >> 1
+	ldx #POS_VOL_L + $7
 	stx VMADDL
 	_screen_write_hex $2A
+	ldx #POS_VOL_R + $7
+	stx VMADDL
+	_screen_write_hex $4C
+
+	; Echo Volume
+	ldx #POS_ECHO_L + $7
+	stx VMADDL
+	_screen_write_hex $EE
+	ldx #POS_ECHO_R + $7
+	stx VMADDL
+	_screen_write_hex $EF
 
 	; Noise Clk
-	ldx #$1D14 >> 1
+	ldx #POS_NOISE + $8
 	stx VMADDL
 	_screen_write_hex $FF
 
 	; Fill mute
-	ldx #$1C8A >> 1
+	ldx #POS_MUTE + $5
 	stx VMADDL
 	jsr _screen_write_box1_filled
 rts
