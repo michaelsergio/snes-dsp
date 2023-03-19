@@ -1,6 +1,8 @@
 PAL_SAMPLE_ADDR = $80
 PAL_SAMPLE_ADDR_SNES = $90
 
+COLOR_MAGENTA = $1F7C
+
 
 ; Loads graphics into vram
 ; Simplfies loading vram to copy data
@@ -173,20 +175,29 @@ SNES_COLOR_PURPLE	  = $2A41   ; A/B buttons # 514887
     sta CGDATA
 .endmacro
 
+; The first color in the palette is the transparency color for the SNES
+; Lets make it magenta to make life obvious
+graphics_vload_palette_transparent_magenta:
+  lda #$00
+  sta CGADD
+  _graphics_color_write COLOR_MAGENTA
+  rts
+
 graphics_vload_sample_palette_snes:
     ; force a palette here
     lda #PAL_SAMPLE_ADDR_SNES     ; according to A-17 in OBJ palettes in mode 0
     sta CGADD
 
-	_graphics_color_write $FFFF ; White
-	_graphics_color_write SNES_COLOR_BLUE
-	_graphics_color_write SNES_COLOR_GREEN
-	_graphics_color_write SNES_COLOR_RED
-	_graphics_color_write SNES_COLOR_YELLOW
-	_graphics_color_write SNES_COLOR_DARK_GRAY
-	_graphics_color_write SNES_COLOR_LIGHT_GRAY
-	_graphics_color_write SNES_COLOR_BLACK
-	_graphics_color_write SNES_COLOR_LILAC
-	_graphics_color_write SNES_COLOR_PURPLE
-rts
+    _graphics_color_write COLOR_MAGENTA
+    _graphics_color_write SNES_COLOR_BLUE
+    _graphics_color_write SNES_COLOR_GREEN
+    _graphics_color_write SNES_COLOR_RED
+    _graphics_color_write SNES_COLOR_YELLOW
+    _graphics_color_write SNES_COLOR_DARK_GRAY
+    _graphics_color_write SNES_COLOR_LIGHT_GRAY
+    _graphics_color_write SNES_COLOR_BLACK
+    _graphics_color_write SNES_COLOR_LILAC
+    _graphics_color_write SNES_COLOR_PURPLE
+    _graphics_color_write $FFFF ; White
+  rts
 

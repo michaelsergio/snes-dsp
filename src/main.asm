@@ -117,10 +117,7 @@ setup_video:
     jsr graphics_vload_sample_palette_snes
 
     ; force Black BG by setting first color in first palette to black
-    force_black_bg:
-        stz CGADD
-        stz CGDATA
-        stz CGDATA
+    jsr graphics_vload_palette_transparent_magenta
 
     ; Make sure hscroll is 0
     stz mBG1HOFS
@@ -131,15 +128,15 @@ setup_video:
     ; Load tile data to VRAM
     ;jsr reset_tiles
     ;graphics_vload_block test_font_a_obj, $0000, $0020 ; 2 tiles, 2bpp * 8x8 / 8bits = 32 bytes
-    graphics_vload_block font_charset, $0100, 640 ; 40 tiles, 2bpp * 8x8 / 8 bits= 
-    graphics_vload_block tiles_basic_set, $0280, 128 ; 8 tiles, 2bpp * 8x8 / 8 bits = 128
+    graphics_vload_block font_charset, $0400 >> 1, 640 ; 40 tiles, 2bpp * 8x8 / 8 bits= 
+    graphics_vload_block tiles_basic_set, $0380, 128 ; 8 tiles, 2bpp * 8x8 / 8 bits = 128
 
     ; BG2 blocks
     BG2_VRAM_TILE_START = $2000
     graphics_vload_block tiles_basic_set, BG2_VRAM_TILE_START, (8*2*8) ; num * bpp * size
 
     ; jsr level_basic_tile_load_tilemap
-	jsr screen_basic_tile_load_tilemap
+    jsr screen_basic_tile_load_tilemap
 
     ; TODO: Transfer OAM, CGRAM Data via DMA (2 channels)
     jsr graphics_reset_sprite_table
@@ -155,14 +152,21 @@ rts
 register_screen_settings:
     stz BGMODE  ; mode 0 8x8 4-color 4-bgs
 
-    lda #$04    ; Tile Map Location - set BG1 tile offset to $0400 (Word addr) (0800 in vram) with sc_size=00
+    ; Where to write the Tile Map in video ram
+    ; - set BG1 tile offset to $0400 (Word addr) (0800 in vram) with sc_size=00
+    ; The actual value for 0800>>9 will be 04 for BG1 tile offset. which means 4000 word ram
+    ; 04 is %0000 0100
+    lda #$1800 >> 11 << 2
     sta BG1SC   ; BG1SC 
 
-    lda #$18    ; Tile Map Location - set BG3 tile offset to $1800 (Word addr) (3000 in vram) with sc_size=00
-    sta BG2SC   ; BG1SC 
+    ; Tile Map Location - set BG2 tile offset to $1000 (Word addr) (2000 in vram) with sc_size=00
+    lda #$0800 >> 11 << 2
+    sta BG2SC   ; BG2SC 
 
-    lda #$20
-    sta BG12NBA ; BG1 name base address to $0000 (word addr) (Tiles offset)
+    ; Where to find the tile sets
+    lda #$00
+    sta BG12NBA ; BG1 name base address to $0000 and 0000 (word addr) (Tiles offset)
+    ; so $63 would be BG1=3000 and BG2=6000 (VRAM)
     lda #$00
     sta BG34NBA ; BG3 name base address to $0000 (word addr) (Tiles offset)
 
