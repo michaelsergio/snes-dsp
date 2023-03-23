@@ -1,3 +1,4 @@
+.include "dsp_settings.asm"
 
 .code
 
@@ -174,6 +175,7 @@ screen_basic_tile_load_tilemap:
     ldx #_screen_str_noise_clk
     jsr _screen_write_strz
 
+
     ; Write noise and mute box
     ldx #POS_ECHO + $5
     stx VMADDL
@@ -183,6 +185,19 @@ screen_basic_tile_load_tilemap:
     jsr _screen_write_box1
 
 
+    jsr screen_main_cursor_sprite_draw
+
+    ; Add Sample data here
+
+    jsr screen_main_write_volume
+    jsr screen_main_write_echo
+    jsr screen_main_write_noise_clock
+    jsr screen_main_fill_mute
+rts
+
+
+
+screen_main_write_volume:
     ; Sample hex data
     ; Volume
     ldx #POS_VOL_L + $7
@@ -192,6 +207,9 @@ screen_basic_tile_load_tilemap:
     stx VMADDL
     _screen_write_hex $4C
 
+rts
+
+screen_main_write_echo:
     ; Echo Volume
     ldx #POS_ECHO_L + $7
     stx VMADDL
@@ -199,17 +217,21 @@ screen_basic_tile_load_tilemap:
     ldx #POS_ECHO_R + $7
     stx VMADDL
     _screen_write_hex $EF
+rts
 
+screen_main_write_noise_clock:
     ; Noise Clk
     ldx #POS_NOISE + $A
     stx VMADDL
     _screen_write_hex $FF
+rts
 
+screen_main_fill_mute:
     ; Fill mute
     ldx #POS_MUTE + $5
     stx VMADDL
     jsr _screen_write_box1_filled
-    rts
+rts
 
     ; Assume VMADDL is currently set to proper position autoinc-1
     ; Need Y to be the tile data - attr+name
@@ -312,6 +334,44 @@ _screen_write_nibble:
     lda #$00
     sta VMDATAH
     rts
+
+
+screen_main_cursor_sprite_update_position:
+	ldx #$0000
+	stx OAMADDL
+
+	lda z:dsp_cursor_position_x
+	sta OAMDATA 
+	lda z:dsp_cursor_position_y
+	sta OAMDATA 
+rts 
+
+screen_main_cursor_sprite_draw:
+	; Lets render a quick and dirty sprite
+	; Go to first position in OAM table 1
+	ldx #$0000
+	stx OAMADDL
+	lda #$0B ; position x=11
+	sta OAMDATA 
+	lda #$0C; position y=12
+	sta OAMDATA 
+	; Sloppilty reuse a 2bpp text as a 4bpp tile.
+	; This is not normally a good idea, but I'm too lazy
+	; to make another sprite for my cursor
+	lda #$05C0 >> 5
+	sta OAMDATA     ; Name: is char at 1
+	; priority should be 3 so sprites render in proper place
+	lda #$03 << 4
+	sta OAMDATA     ; HBFlip/Pri/ColorPalette/9name
+    ; Clear the negative positions in Table 2
+    stz OAMADDL
+    lda #$01     
+    sta OAMADDH ; Sprite Table 2 at OAM $0100 - will autoinc after L/H write
+    lda #$54     ; except for the first
+	sta OAMDATA
+    lda #$55     ; set the (h-pos) bit for each spot in the OAM table
+	sta OAMDATA
+rts
 
 
 _screen_str_m1: .asciiz "M1"

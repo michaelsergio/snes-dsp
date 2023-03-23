@@ -13,6 +13,9 @@ dp_noise: .res 1, $00
 
 dsp_main_option_selected: .res 1, $00
 
+dsp_cursor_position_x: .res 1, $00 
+dsp_cursor_position_y: .res 1, $00 
+
 .enum dsp_main_options
 	vol_l
 	vol_r
@@ -46,30 +49,30 @@ dsp_main_option_selected: .res 1, $00
 ; We actuall want to map to the XY OAM position
 ; Currently this is written in tile places. 
 ; Position is written as an offset from this table as $XXYY
-dsp_map_option_position:
-	op_pos_vol_l: .word $0704
-	op_pos_vol_r: .word $0706
-	op_pos_echo_l: .word $0708
-	op_pos_echo_r: .word $070A
-	op_pos_key_on_0: .word $050C
-	op_pos_key_on_1: .word $060C
-	op_pos_key_on_2: .word $070C
-	op_pos_key_on_3: .word $080C
-	op_pos_key_on_4: .word $090C
-	op_pos_key_on_5: .word $0A0C
-	op_pos_key_on_6: .word $0B0C
-	op_pos_key_on_7: .word $0C0C
-	op_pos_key_off_0: .word $050E
-	op_pos_key_off_1: .word $060E
-	op_pos_key_off_2: .word $070E
-	op_pos_key_off_3: .word $080E
-	op_pos_key_off_4: .word $090E
-	op_pos_key_off_5: .word $0A0E
-	op_pos_key_off_6: .word $0B0E
-	op_pos_key_off_7: .word $0C0E
-	op_pos_echo_on: .word $0500
-	op_pos_mute: .word $0512
-	op_pos_noise_clk: .word $0914
+; dsp_map_option_position:
+; 	op_pos_vol_l: .word $0704
+; 	op_pos_vol_r: .word $0706
+; 	op_pos_echo_l: .word $0708
+; 	op_pos_echo_r: .word $070A
+; 	op_pos_key_on_0: .word $050C
+; 	op_pos_key_on_1: .word $060C
+; 	op_pos_key_on_2: .word $070C
+; 	op_pos_key_on_3: .word $080C
+; 	op_pos_key_on_4: .word $090C
+; 	op_pos_key_on_5: .word $0A0C
+; 	op_pos_key_on_6: .word $0B0C
+; 	op_pos_key_on_7: .word $0C0C
+; 	op_pos_key_off_0: .word $050E
+; 	op_pos_key_off_1: .word $060E
+; 	op_pos_key_off_2: .word $070E
+; 	op_pos_key_off_3: .word $080E
+; 	op_pos_key_off_4: .word $090E
+; 	op_pos_key_off_5: .word $0A0E
+; 	op_pos_key_off_6: .word $0B0E
+; 	op_pos_key_off_7: .word $0C0E
+; 	op_pos_echo_on: .word $0500
+; 	op_pos_mute: .word $0512
+; 	op_pos_noise_clk: .word $0914
 
 dsp_settings_init:
 	lda #$7F
@@ -86,6 +89,9 @@ dsp_settings_init:
 	stz dp_noise
 
 	stz dsp_main_option_selected
+
+	stz dsp_cursor_position_x
+	stz dsp_cursor_position_y
 rts
 
 
@@ -94,7 +100,7 @@ DSP_MAIN_END_OPTION = dsp_main_options::noise_clk
 dsp_main_next_option:
 	lda dsp_main_option_selected
 	cmp #DSP_MAIN_END_OPTION
-	beq	@inc_and_store_value ; if < noise_clk_selected+1:  store_value
+	bne	@inc_and_store_value ; if < noise_clk_selected+1:  store_value
 	; else wrap around to start
 	lda #$FF  ; Go one less than inc in next step
 	@inc_and_store_value:
@@ -119,7 +125,24 @@ rts
 ; Sprites get moved a little differently.
 ; The sprite will serve as a visual indicator of where we are on the screen
 ; It can look like an arrow if we want ->. Or just a period .
-move_sprite_to_pos:
+dsp_main_update_sprite_pos:
+  lda dsp_main_option_selected
+
+  ; Get the position from the table based on index
+  ; TODO replace this with the slot from the selection index
+  ; The selection index should map 1-to-1 with the sprite_pos_table
+  lda dsp_main_option_selected ; This returns an index
+  asl ; Double the index since since the table is word sized
+  tay
+
+  ; Go from selected index to x y positions
+  ; get the x y position and put it in the correct registers
+  lda sprite_pos_table, y
+  sta dsp_cursor_position_x
+
+  iny  ; get the second byte from the table entry
+  lda sprite_pos_table, y
+  sta dsp_cursor_position_y
 rts
 
 
@@ -129,5 +152,37 @@ rts
 
 ; We also should have a signed write function that writes +/- signed int as a byte
 
+
+
+
+
+; This is written in $YYXX values
+sprite_pos_table: 
+	.word $2030 ; vol L
+	.word $3030 ; vol R
+	.word $4030 ; echo L
+	.word $5030 ; echo R
+	.word $5A28 + $8 * 0	; Kon Position Above
+	.word $5A28 + $8 * 1
+	.word $5A28 + $8 * 2
+	.word $5A28 + $8 * 3
+	.word $5A28 + $8 * 4
+	.word $5A28 + $8 * 5
+	.word $5A28 + $8 * 6
+	.word $5A28 + $8 * 7
+	.word $6A28 + $8 * 0	; Koff Position 7 Above
+	.word $6A28 + $8 * 1
+	.word $6A28 + $8 * 2
+	.word $6A28 + $8 * 3
+	.word $6A28 + $8 * 4
+	.word $6A28 + $8 * 5
+	.word $6A28 + $8 * 6
+	.word $6A28 + $8 * 7
+	.word $8020 ; echo
+	.word $9020 ; mute
+	.word $A048 ; Noise Clock
+
+; Koff position (left) is 7030
+; Kon position (left) is 6030
 
 

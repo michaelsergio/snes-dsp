@@ -1,3 +1,11 @@
+; Call only during vblank
+.macro input_wait_for_ready
+  @input_wait_for_ready_blocking:
+  lda HVBJOY
+  bit #$01 ; Check the Std ctrl enable
+  beq @input_wait_for_ready_blocking ; if set, we are reading and should block
+.endmacro
+
 .macro _input_on_key input, action, key, high
   .local done	    ; Use done as a local symbol
   lda input + high

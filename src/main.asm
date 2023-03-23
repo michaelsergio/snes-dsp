@@ -4,13 +4,13 @@
 .include "lorom128.inc"
 .include "startup.inc"
 .include "graphics.asm"
-; .include "joycon.asm"
+.include "joycon.asm"
 .include "level_basic_tile.asm"
-.include "screen_main.asm"
 .include "screen_scroll.asm"
 .include "input.asm"
 .include "audio.asm"
-.include "dsp_settings.asm"
+; .include "dsp_settings.asm"
+.include "screen_main.asm"
 
 ; Include the SPC audio program load position and size
 .import __SPCIMAGE_LOAD__, __SPCIMAGE_SIZE__
@@ -40,20 +40,8 @@ Reset:
     ; Initialize zeropage
     startup_clear_directpage
 
-    main_setup_video:
-    jsr setup_video
 
 
-	jsr cursor_sprite_draw
-
-
-    ; Release VBlank
-    lda #FULL_BRIGHT  ; Full brightness
-    sta INIDISP
-
-    ; Display Period begins now
-    lda #(NMI_ON | AUTO_JOY_ON) ; enable NMI Enable and Joycon
-    sta NMITIMEN
 
     main_init: 
 
@@ -62,14 +50,24 @@ Reset:
     lda #$5
     sta dpTmp5
 
-    stz wJoyInput
-    stz wJoyInput + 1
+	joycon_read_joy1_init wJoyInput
 
     jsr dsp_settings_init
 
+	jsr main_audio_init
 
-    ; Transfer the audio program
-    audio_init ^__SPCIMAGE_LOAD__, .loword(__SPCIMAGE_LOAD__), __SPCIMAGE_SIZE__
+    main_setup_video:
+    jsr setup_video
+    jsr screen_main_cursor_sprite_draw
+
+
+    ; Display Period begins now
+    lda #(NMI_ON | AUTO_JOY_ON) ; enable NMI Enable and Joycon
+    sta NMITIMEN
+
+    ; Release VBlank
+    lda #FULL_BRIGHT  ; Full brightness
+    sta INIDISP
     
     game_loop:
         ; TODO: Gen data of register to be renewed & mem to change BG & OBJ data
@@ -77,46 +75,15 @@ Reset:
         ; react to input
 		; joycon_read_joy1_blocking wJoyInput
 		; jsr check_inputs
+		jsr dsp_main_update_sprite_pos
 
         wai ; Wait for NMI
 jmp game_loop
 
-cursor_sprite_draw:
-	; Lets render a quick and dirty sprite
-	; Go to first position in OAM table 1
-	ldx #$0000
-	stx OAMADDL
-	lda #$0B ; position x=11
-	sta OAMDATA 
-	lda #$0C; position y=12
-	sta OAMDATA 
-	; Sloppilty reuse a 2bpp text as a 4bpp tile.
-	; This is not normally a good idea, but I'm too lazy
-	; to make another sprite for my cursor
-	lda #$05C0 >> 5
-	sta OAMDATA     ; Name: is char at 1
-	; priority should be 3 so sprites render in proper place
-	lda #$03 << 4
-	sta OAMDATA     ; HBFlip/Pri/ColorPalette/9name
-    ; Clear the negative positions in Table 2
-    stz OAMADDL
-    lda #$01     
-    sta OAMADDH ; Sprite Table 2 at OAM $0100 - will autoinc after L/H write
-    lda #$54     ; except for the first
-	sta OAMDATA
-    lda #$55     ; set the (h-pos) bit for each spot in the OAM table
-	sta OAMDATA
+main_audio_init:
+    ; Transfer the audio program
+    audio_init ^__SPCIMAGE_LOAD__, .loword(__SPCIMAGE_LOAD__), __SPCIMAGE_SIZE__
 rts
-
-cursor_position_set:
-	ldx #$0000
-	stx OAMADDL
-
-	lda bSpritePosX
-	sta OAMDATA 
-	lda bSpritePosY
-	sta OAMDATA 
-rts 
 
 
 VBlank:
@@ -134,53 +101,19 @@ VBlank:
     ; Update the screen scroll register
 	; screen_scroll_vupdate
 
-	jsr map_sprite_position
-	jsr cursor_position_set
+	jsr screen_main_cursor_sprite_update_position
+
+
+    ; read controllers last after DMA happens
+
+	; block until input is ready
+	joycon_read_joy1_blocking wJoyInput
+    ; Move between the inputs
+    input_on_left wJoyInput, dsp_main_previous_option
+    input_on_right wJoyInput, dsp_main_next_option
 
     endvblank: 
 rti 
-
-; This is written in $YYXX values
-sprite_pos_table: 
-	.word $2030 ; vol L
-	.word $3030 ; vol R
-	.word $4030 ; echo L
-	.word $5030 ; echo R
-	.word $5A28 + $8 * 0	; Kon Position Above
-	.word $5A28 + $8 * 1
-	.word $5A28 + $8 * 2
-	.word $5A28 + $8 * 3
-	.word $5A28 + $8 * 4
-	.word $5A28 + $8 * 5
-	.word $5A28 + $8 * 6
-	.word $5A28 + $8 * 7
-	.word $6A28 + $8 * 0	; Koff Position 7 Above
-	.word $6A28 + $8 * 1
-	.word $6A28 + $8 * 2
-	.word $6A28 + $8 * 3
-	.word $6A28 + $8 * 4
-	.word $6A28 + $8 * 5
-	.word $6A28 + $8 * 6
-	.word $6A28 + $8 * 7
-	.word $8020 ; echo
-	.word $9020 ; mute
-	.word $A048 ; Noise Clock
-
-; Koff position (left) is 7030
-; Kon position (left) is 6030
-
-map_sprite_position:
-	; Get the position from the table based on index
-	; TODO replace this with the slot from the selection index
-	; The selection index should map 1-to-1 with the sprite_pos_table
-	lda #$0C ; load the 12th slot
-	asl ; Double since these are word sized
-	tay
-	ldx sprite_pos_table, y
-
-	; Update sprite position
-	stx bSpritePosX ; set x and y in one operation
-rts
 
 
 PAL_FONT_A_ADDR = $00
