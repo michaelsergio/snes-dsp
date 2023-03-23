@@ -154,6 +154,85 @@ rts
 
 
 
+dsp_increment_selected:
+  lda dsp_main_option_selected
+
+  ; Case: Vol L
+  @check_vol_l:
+  cmp #dsp_main_options::vol_l
+  bne @check_vol_r
+  ; Do the increment
+  lda dp_vol_l
+  inc
+  cmp #$80 ; Dont go higher than signed bit
+  beq @done ; 
+  sta  dp_vol_l
+  bra @done
+  
+  @check_vol_r:
+  cmp #dsp_main_options::vol_r
+  bne @check_echo_l
+  ; Do the increment
+  lda dp_vol_r
+  inc
+  cmp #$80 ; Dont go higher than signed bit
+  beq @done ; 
+  sta  dp_vol_r
+  bra @done
+
+  @check_echo_l:
+  ; ... more stuf here ...
+
+  @check_mute:
+  cmp #dsp_main_options::mute
+  bne @check_noise_clock
+  lda #$01     ; mute on = 1
+  sta dp_mute 
+  bra @done
+
+  @check_noise_clock:
+
+  @done:
+rts
+
+dsp_decrement_selected:
+  lda dsp_main_option_selected
+
+  ; Case: Vol L
+  @check_vol_l:
+  cmp #dsp_main_options::vol_l
+  bne @check_vol_r
+  ; Do the increment
+  lda dp_vol_l
+  beq @done ; dont go lower than 0
+  dec
+  sta  dp_vol_l
+  bra @done
+  
+  @check_vol_r:
+  cmp #dsp_main_options::vol_r
+  bne @check_echo_l
+  ; Do the increment
+  lda dp_vol_r
+  beq @done ; dont go lower than 0
+  dec
+  sta  dp_vol_r
+  bra @done
+
+  @check_echo_l:
+  ; ... more stuf here ...
+
+
+  @check_mute:
+  cmp #dsp_main_options::mute
+  bne @check_noise_clock
+  stz dp_mute ; mute off = 0
+  bra @done
+
+  @check_noise_clock:
+
+  @done:
+rts
 
 
 ; This is written in $YYXX values

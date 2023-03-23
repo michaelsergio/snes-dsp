@@ -10,6 +10,26 @@
 	jsr _screen_write_nibble 
 .endmacro
 
+.macro _screen_write_hex_from_address addr
+	lda addr
+	pha ; push a copy on the stack for later
+	lsr
+	lsr
+	lsr ; get the high byte
+	lsr ; aka value >> 4
+	jsr _screen_write_nibble 
+
+	pla ; Bring back the copy we put on the stack
+	and #$0F ; get just the low nibble
+	jsr _screen_write_nibble 
+.endmacro
+
+screen_main_vblank_update:
+  jsr screen_main_cursor_sprite_update_position
+  jsr screen_main_write_volume
+  jsr screen_main_write_mute
+rts
+
 ; TILEMAP_BASE_ADDRESS = $0400 ; ($0400 + $0 + $0 * $20) ; screen position 0 
 TILEMAP_BASE_ADDRESS = $0800 >> 1 ; This is the tilebase address. VRAM is in words (/2)
 TILEMAP_BASE_ADDRESS_BG_2 = $1800 >> 1 ; We'll set the second address a little below
@@ -188,11 +208,8 @@ screen_basic_tile_load_tilemap:
     jsr screen_main_cursor_sprite_draw
 
     ; Add Sample data here
-
-    jsr screen_main_write_volume
     jsr screen_main_write_echo
     jsr screen_main_write_noise_clock
-    jsr screen_main_fill_mute
 rts
 
 
@@ -202,11 +219,10 @@ screen_main_write_volume:
     ; Volume
     ldx #POS_VOL_L + $7
     stx VMADDL
-    _screen_write_hex $2A
+    _screen_write_hex_from_address dp_vol_l
     ldx #POS_VOL_R + $7
     stx VMADDL
-    _screen_write_hex $4C
-
+    _screen_write_hex_from_address dp_vol_r
 rts
 
 screen_main_write_echo:
@@ -225,6 +241,22 @@ screen_main_write_noise_clock:
     stx VMADDL
     _screen_write_hex $FF
 rts
+
+screen_main_write_mute:
+    ldx #POS_MUTE + $5
+    stx VMADDL
+
+    lda dp_mute
+    beq @draw_empty
+    ; Otherwise draw filled
+    jsr _screen_write_box1_filled
+    bra @done	
+
+    @draw_empty:
+    jsr _screen_write_box1
+
+    @done:
+rts 
 
 screen_main_fill_mute:
     ; Fill mute
@@ -340,9 +372,9 @@ screen_main_cursor_sprite_update_position:
 	ldx #$0000
 	stx OAMADDL
 
-	lda z:dsp_cursor_position_x
+	lda dsp_cursor_position_x
 	sta OAMDATA 
-	lda z:dsp_cursor_position_y
+	lda dsp_cursor_position_y
 	sta OAMDATA 
 rts 
 

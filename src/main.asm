@@ -101,7 +101,7 @@ VBlank:
     ; Update the screen scroll register
 	; screen_scroll_vupdate
 
-	jsr screen_main_cursor_sprite_update_position
+	jsr screen_main_vblank_update
 
 
     ; read controllers last after DMA happens
@@ -111,6 +111,8 @@ VBlank:
     ; Move between the inputs
     input_on_left wJoyInput, dsp_main_previous_option
     input_on_right wJoyInput, dsp_main_next_option
+	input_on_up wJoyInput, dsp_increment_selected
+	input_on_down wJoyInput, dsp_decrement_selected
 
     endvblank: 
 rti 
