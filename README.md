@@ -1,9 +1,9 @@
-This is a very simple application for testing noise in SNES.
+This is a very simple application for testing the DSP chip in SNES.
 
-Simple code runs on the SPC700 that turns on the noise channel.
+It is still a work in progress.
 
-Tag: first-noise - the simpliest bloop
+Tag: 
 
 
 
-Running `./build` creates an executable ROM under bin/noise.smc
+Running `./build` creates an executable ROM under bin/dsp.smc
